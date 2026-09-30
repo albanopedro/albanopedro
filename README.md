@@ -5,18 +5,17 @@
 </p>
 
 <p align="center">
-  <img src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&weight=500&size=20&duration=2600&pause=1100&color=FF1F3D&center=true&vCenter=true&width=640&lines=Software+Developer+%40+Inform+Solu%C3%A7%C3%B5es;Software+Engineering+student+%40+FIAP;Python+%C2%B7+JavaScript+%C2%B7+C%2FC%2B%2B;From+ESP32+firmware+to+full-stack+web+apps;Open+to+software+engineering+internships" alt="Software Developer @ Inform Soluções · Software Engineering student @ FIAP">
+  <img src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&weight=500&size=20&duration=2600&pause=1100&color=FF1F3D&center=true&vCenter=true&width=640&lines=Software+Developer;Software+Engineering+student+%40+FIAP;Python+%C2%B7+JavaScript+%C2%B7+C%2FC%2B%2B;From+ESP32+firmware+to+full-stack+web+apps;Open+to+software+engineering+internships" alt="Software Developer · Software Engineering student @ FIAP">
 </p>
 
 ## `> whoami`
 
-Hi, I'm Pedro. At Inform Soluções I automate internal systems and workflows — swapping manual, repetitive work for Python and C/C++ scripts and integrations — and build websites and web systems, from requirements to delivery.
+Hi, I'm Pedro. I study Software Engineering at FIAP and build automations, websites and web apps with Python, JavaScript and C/C++.
 
 My projects run from hardware to the browser: an ESP32 controller for an injection molding machine, a full-stack personal finance app and an offline wiki for my college notes. Next on the list: cybersecurity and AI.
 
 ```yaml
-role:      Software Developer @ Inform Soluções   # Apr 2026 →
-studying:  Software Engineering @ FIAP            # bachelor's, Feb 2026 →
+studying:  Software Engineering @ FIAP   # bachelor's, Feb 2026 →
 based_in:  Bauru, SP — Brazil
 speaks:    Portuguese (native) · English (basic) · Spanish (basic)
 status:    open to software engineering internships
