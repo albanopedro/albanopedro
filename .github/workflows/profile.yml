@@ -1,0 +1,157 @@
+name: profile cards
+
+on:
+  schedule:
+    - cron: "0 */12 * * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [".github/workflows/profile.yml"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: profile-cards
+  cancel-in-progress: true
+
+jobs:
+  cards:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: snake
+        uses: Platane/snk/svg-only@v3
+        with:
+          github_user_name: ${{ github.repository_owner }}
+          outputs: |
+            dist/snake.svg?color_snake=#ff1f3d&color_dots=#ebedf0,#ffc9d1,#ff7a8f,#ff1f3d,#8b0019
+            dist/snake-dark.svg?palette=github-dark&color_snake=#ff1f3d&color_dots=#161b22,#3d0a12,#7a0016,#c2002a,#ff1f3d
+
+      - name: stats
+        uses: stats-organization/github-readme-stats-action@v2
+        with:
+          card: stats
+          options: username=${{ github.repository_owner }}&show_icons=true&include_all_commits=true&bg_color=0d0d0d&title_color=ff1f3d&icon_color=ff1f3d&text_color=e6e6e6&ring_color=ff1f3d&border_color=3b000b&border_radius=8
+          path: dist/stats.svg
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fail_on_error: true
+
+      - name: top languages
+        uses: stats-organization/github-readme-stats-action@v2
+        with:
+          card: top-langs
+          options: username=${{ github.repository_owner }}&layout=compact&langs_count=8&bg_color=0d0d0d&title_color=ff1f3d&text_color=e6e6e6&border_color=3b000b&border_radius=8
+          path: dist/top-langs.svg
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fail_on_error: true
+
+      - name: streak
+        uses: DenverCoder1/github-readme-streak-stats@v1
+        with:
+          options: user=${{ github.repository_owner }}&background=0D0D0D&border=3B000B&stroke=3B000B&ring=FF1F3D&fire=FF1F3D&currStreakNum=FFFFFF&sideNums=FFFFFF&currStreakLabel=FF1F3D&sideLabels=E6E6E6&dates=8A8A8A&border_radius=8
+          path: dist/streak.svg
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: trophies
+        uses: ryo-ma/github-profile-trophy@e3c89df995e92e67cdd4b2acaab9d974583dc1f7 # master, 2026-07-25
+        with:
+          username: ${{ github.repository_owner }}
+          output_path: dist/trophy.svg
+          token: ${{ secrets.GITHUB_TOKEN }}
+          theme: dark_lover
+
+      # dark_lover is already black; swap its orange text for the profile red
+      - name: trophies, red
+        run: sed -i 's/#e8aa64/#ff1f3d/g' dist/trophy.svg
+
+      - name: activity graph
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LOGIN: ${{ github.repository_owner }}
+        run: |
+          python3 - <<'PY'
+          import json, math, os, urllib.request
+          from datetime import date
+
+          query = """query($login: String!) { user(login: $login) { contributionsCollection {
+            contributionCalendar { weeks { contributionDays { date contributionCount } } } } } }"""
+          req = urllib.request.Request(
+              "https://api.github.com/graphql",
+              data=json.dumps({"query": query, "variables": {"login": os.environ["LOGIN"]}}).encode(),
+              headers={"Authorization": f"bearer {os.environ['GH_TOKEN']}", "Content-Type": "application/json"},
+          )
+          res = json.load(urllib.request.urlopen(req))
+          if "errors" in res:
+              raise SystemExit(res["errors"])
+          weeks = res["data"]["user"]["contributionsCollection"]["contributionCalendar"]["weeks"]
+          days = [d for w in weeks for d in w["contributionDays"]][-31:]
+          counts = [d["contributionCount"] for d in days]
+
+          W, H = 1200, 380
+          left, right, top, bottom = 70, 40, 96, 58
+          pw, ph = W - left - right, H - top - bottom
+          step = max(1, math.ceil(max(counts) / 4))
+          ymax = step * 4
+          xs = [left + i * pw / (len(days) - 1) for i in range(len(days))]
+          ys = [top + ph - c / ymax * ph for c in counts]
+          line = " ".join(f"{'M' if i == 0 else 'L'}{x:.1f},{y:.1f}" for i, (x, y) in enumerate(zip(xs, ys)))
+          area = f"{line} L{xs[-1]:.1f},{top + ph} L{xs[0]:.1f},{top + ph} Z"
+          start, end = date.fromisoformat(days[0]["date"]), date.fromisoformat(days[-1]["date"])
+
+          grid = "".join(
+              f'<line x1="{left}" x2="{W - right}" y1="{top + ph - k * ph / 4:.1f}" y2="{top + ph - k * ph / 4:.1f}" class="grid"/>'
+              f'<text x="{left - 16}" y="{top + ph - k * ph / 4 + 4:.1f}" class="axis" text-anchor="end">{k * step}</text>'
+              for k in range(5)
+          )
+          xlabels = "".join(
+              f'<text x="{x:.1f}" y="{H - bottom + 26}" class="axis" text-anchor="middle">{date.fromisoformat(d["date"]).day}</text>'
+              for x, d in zip(xs, days)
+          )
+          points = "".join(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="4" class="pt"/>' for x, y in zip(xs, ys))
+
+          svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}" role="img" aria-label="Contributions in the last 31 days">
+          <style>
+            text {{ font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }}
+            .title {{ fill: #ff1f3d; font-size: 22px; font-weight: 700; letter-spacing: 1px; }}
+            .sub {{ fill: #8a8a8a; font-size: 14px; }}
+            .num {{ fill: #e6e6e6; font-size: 14px; }}
+            .axis {{ fill: #6b6b6b; font-size: 12px; }}
+            .grid {{ stroke: #1f1f1f; stroke-dasharray: 4 6; }}
+            .line {{ fill: none; stroke: #ff1f3d; stroke-width: 2.5; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw 2.2s ease-out forwards; }}
+            .area {{ opacity: 0; animation: fade 1s 1.2s ease-out forwards; }}
+            .pt {{ fill: #0d0d0d; stroke: #ff1f3d; stroke-width: 2; opacity: 0; animation: fade .6s 1.8s forwards; }}
+            @keyframes draw {{ to {{ stroke-dashoffset: 0; }} }}
+            @keyframes fade {{ to {{ opacity: 1; }} }}
+            @media (prefers-reduced-motion: reduce) {{ .line, .area, .pt {{ animation: none; stroke-dashoffset: 0; opacity: 1; }} }}
+          </style>
+          <defs>
+            <linearGradient id="fill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#ff1f3d" stop-opacity=".35"/>
+              <stop offset="1" stop-color="#ff1f3d" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <rect x=".5" y=".5" width="{W - 1}" height="{H - 1}" rx="8" fill="#0d0d0d" stroke="#3b000b"/>
+          <text x="{left - 36}" y="46" class="title">&gt; contribution activity</text>
+          <text x="{left - 36}" y="72" class="sub">{start:%b %d} → {end:%b %d, %Y} · last 31 days</text>
+          <text x="{W - right}" y="46" class="num" text-anchor="end">total {sum(counts)} · peak {max(counts)}/day</text>
+          {grid}
+          <path d="{area}" fill="url(#fill)" class="area"/>
+          <path d="{line}" pathLength="1" class="line"/>
+          {points}
+          {xlabels}
+          </svg>"""
+
+          os.makedirs("dist", exist_ok=True)
+          with open("dist/activity.svg", "w") as f:
+              f.write(svg)
+          PY
+
+      - name: publish to output branch
+        uses: crazy-max/ghaction-github-pages@v5
+        with:
+          target_branch: output
+          build_dir: dist
+          commit_message: update profile cards
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
